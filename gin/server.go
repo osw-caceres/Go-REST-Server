@@ -1,10 +1,9 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -138,20 +137,20 @@ func (ts *taskServer) getTaskHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, task)
 }
 
-func (ts *taskServer) deleteTaskHandler(w http.ResponseWriter, req *http.Request) {
-	log.Printf("handling delete task at %s\n", req.URL.Path)
+// func (ts *taskServer) deleteTaskHandler(w http.ResponseWriter, req *http.Request) {
+// 	log.Printf("handling delete task at %s\n", req.URL.Path)
 
-	id, err := strconv.Atoi(req.PathValue("id"))
-	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
-	}
+// 	id, err := strconv.Atoi(req.PathValue("id"))
+// 	if err != nil {
+// 		http.Error(w, "invalid id", http.StatusBadRequest)
+// 		return
+// 	}
 
-	err = ts.store.DeleteTask(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-	}
-}
+// 	err = ts.store.DeleteTask(id)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusNotFound)
+// 	}
+// }
 
 func (ts *taskServer) DeleteAllTasksHandler(w http.ResponseWriter, req *http.Request) {
 	log.Printf("handling delete all tasks at %s\n", req.URL.Path)
@@ -159,46 +158,46 @@ func (ts *taskServer) DeleteAllTasksHandler(w http.ResponseWriter, req *http.Req
 	ts.store.DeleteAllTasks()
 }
 
-func (ts *taskServer) tagHandler(w http.ResponseWriter, req *http.Request) {
-	log.Printf("handling tasks by tag at %s\n", req.URL.Path)
+// func (ts *taskServer) tagHandler(w http.ResponseWriter, req *http.Request) {
+// 	log.Printf("handling tasks by tag at %s\n", req.URL.Path)
 
-	tag := req.PathValue("tag")
+// 	tag := req.PathValue("tag")
 
-	tasks := ts.store.GetTasksByTag(tag)
-	js, err := json.Marshal(tasks)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
-}
+// 	tasks := ts.store.GetTasksByTag(tag)
+// 	js, err := json.Marshal(tasks)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.Write(js)
+// }
 
-func (ts *taskServer) dueHandler(w http.ResponseWriter, req *http.Request) {
-	log.Printf("handling tasks by due date at %s\n", req.URL.Path)
+// func (ts *taskServer) dueHandler(w http.ResponseWriter, req *http.Request) {
+// 	log.Printf("handling tasks by due date at %s\n", req.URL.Path)
 
-	badRequestError := func() {
-		http.Error(w, fmt.Sprintf("expect /due/<year>/<month>/<day>, got %v", req.URL.Path), http.StatusBadRequest)
-	}
+// 	badRequestError := func() {
+// 		http.Error(w, fmt.Sprintf("expect /due/<year>/<month>/<day>, got %v", req.URL.Path), http.StatusBadRequest)
+// 	}
 
-	year, errYear := strconv.Atoi(req.PathValue("year"))
-	month, errMonth := strconv.Atoi(req.PathValue("month"))
-	day, errDay := strconv.Atoi(req.PathValue("day"))
+// 	year, errYear := strconv.Atoi(req.PathValue("year"))
+// 	month, errMonth := strconv.Atoi(req.PathValue("month"))
+// 	day, errDay := strconv.Atoi(req.PathValue("day"))
 
-	if errYear != nil || errMonth != nil || errDay != nil || month < int(time.January) || month > int(time.December) {
-		badRequestError()
-		return
-	}
+// 	if errYear != nil || errMonth != nil || errDay != nil || month < int(time.January) || month > int(time.December) {
+// 		badRequestError()
+// 		return
+// 	}
 
-	tasks := ts.store.GetTasksByDueDate(year, time.Month(month), day)
-	js, err := json.Marshal(tasks)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
-}
+// 	tasks := ts.store.GetTasksByDueDate(year, time.Month(month), day)
+// 	js, err := json.Marshal(tasks)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.Write(js)
+// }
 
 // func ping(w http.ResponseWriter, req *http.Request) {
 // 	log.Printf("handling ping at %s\n", req.URL.Path)
@@ -226,8 +225,10 @@ func main() {
 	router := gin.Default()
 	server := NewTaskServer()
 
+	router.POST("/task/", server.createTaskHandler)
 	router.GET("/task/", server.getAllTasksHandler)
 	router.GET("/task/:id", server.getTaskHandler)
 	router.GET("/ping", ping)
 
+	router.Run("localhost:" + os.Getenv("SERVERPORT"))
 }
